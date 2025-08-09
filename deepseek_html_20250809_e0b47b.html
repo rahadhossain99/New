@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cholo Dekhi - অনলাইন পরীক্ষা</title>
+    
+    <!-- Firebase SDK Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-light: #4895ef;
+            --secondary: #3f37c9;
+            --accent: #f72585;
+            --success: #4cc9f0;
+            --danger: #f94144;
+            --warning: #f8961e;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --text: #333;
+            --bg-glass: rgba(255, 255, 255, 0.15);
+            --border-glass: rgba(255, 255, 255, 0.2);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Hind Siliguri', sans-serif;
+            background: linear-gradient(-45deg, #3f37c9, #4361ee, #4895ef, #4cc9f0);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: var(--light);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--bg-glass);
+            border-radius: 20px;
+            border: 1px solid var(--border-glass);
+            backdrop-filter: blur(12px);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin: 0 auto;
+            position: relative;
+            min-height: 80vh;
+        }
+
+        .screen {
+            display: none;
+            padding: 40px;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .screen.active { 
+            display: block;
+            min-height: 80vh;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1, h2, h3 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        h1 { font-size: 2.5rem; }
+        h2 { font-size: 2rem; }
+        h3 { font-size: 1.5rem; }
+
+        p {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+            color: rgba(255,255,255,0.9);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+            text-decoration: none;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            margin: 10px 0;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+        }
+
+        .btn i {
+            font-size: 1.2em;
+        }
+
+        .btn-google {
+            background: white;
+            color: var(--text);
+        }
+
+        .btn-google:hover {
+            background: #f1f1f1;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+        }
+
+        .btn-danger:hover {
+            background: #e03537;
+        }
+
+        .btn-success {
+            background: var(--success);
+        }
+
+        .btn-success:hover {
+            background: #3ab8db;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+        }
+
+        .btn-warning:hover {
+            background: #e68a19;
+        }
+
+        .btn-small {
+            padding: 8px 15px;
+            font-size: 0.9rem;
+            max-width: none;
+            width: auto;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .flex-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* User Info */
+        #user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 15px;
+            border-radius: 15px;
+            background: rgba(0,0,0,0.2);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        #user-pic {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+            object-fit: cover;
+        }
+
+        #user-name {
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: white;
+        }
+
+        /* Exam Screen */
+        #exam-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        #timer {
+            background: rgba(0,0,0,0.3);
+            padding: 8px 20px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #timer i {
+            font-size: 1rem;
+        }
+
+        .question-card {
+            background: rgba(0,0,0,0.1);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        #question-text {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+            color: white;
+            line-height: 1.4;
+        }
+
+        .options-container {
+            display: grid;
+            gap: 15px;
+        }
+
+        .option {
+            padding: 15px 20px;
+            background: var(--bg-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            color: var(--light);
+            font-size: 1.1rem;
+        }
+
+        .option:hover {
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .option.correct {
+            background: rgba(76, 201, 240, 0.7);
+            border-color: var(--success);
+            color: white;
+            font-weight: bold;
+        }
+
+        .option.incorrect {
+            background: rgba(249, 65, 68, 0.7);
+            border-color: var(--danger);
+            color: white;
+            font-weight: bold;
+        }
+
+        .option.correct::after, .option.incorrect::after {
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            font-size: 1.2rem;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .option.correct::after {
+            content: '\f00c';
+        }
+
+        .option.incorrect::after {
+            content: '\f00d';
+        }
+
+        /* Result Screen */
+        .result-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            padding: 20px 0;
+        }
+
+        .progress-circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: radial-gradient(closest-side, rgba(0,0,0,0.3) 79%, transparent 80% 100%),
+                        conic-gradient(var(--success) 0%, var(--danger) 100%);
+            position: relative;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+
+        .progress-circle::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(var(--success) 0%, var(--danger) 100%);
+            animation: rotate 2s linear infinite;
+            opacity: 0.7;
+        }
+
+        .progress-circle span {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: white;
+            z-index: 1;
+        }
+
+        .result-details {
+            background: rgba(0,0,0,0.2);
+            padding: 20px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .result-item:last-child {
+            margin-bottom: 0;
+            border-bottom: none;
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .result-value {
+            font-weight: 700;
+            color: white;
+        }
+
+        #final-score-text {
+            font-size: 3rem;
+            color: white;
+            margin: 10px 0;
+        }
+
+        #time-taken-text {
+            font-size: 1.3rem;
+            color: var(--accent);
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        /* Admin Dashboard */
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-glass);
+        }
+
+        th {
+            color: var(--primary-light);
+            position: sticky;
+            top: 0;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(5px);
+            font-weight: 600;
+        }
+
+        tbody tr {
+            transition: background-color 0.3s;
+        }
+
+        tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Loading Spinner */
+        #loading-spinner {
+            border: 5px solid rgba(255,255,255,0.3);
+            border-top: 5px solid var(--primary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 50px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Admin Access Button */
+        #admin-access {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.3);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+
+        #admin-access:hover {
+            background: rgba(0,0,0,0.5);
+            transform: translateY(-3px);
+        }
+
+        #admin-access i {
+            font-size: 1.2rem;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: rgba(255,255,255,0.7);
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .container {
+                border-radius: 15px;
+            }
+            
+            .screen {
+                padding: 25px 15px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            h2 {
+                font-size: 1.7rem;
+            }
+            
+            #question-text {
+                font-size: 1.2rem;
+            }
+            
+            .option {
+                padding: 12px 15px;
+                font-size: 1rem;
+            }
+            
+            .progress-circle {
+                width: 150px;
+                height: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Login Screen -->
+        <div id="login-screen" class="screen flex-center">
+            <div class="text-center">
+                <h1><i class="fas fa-graduation-cap"></i> চলো দেখি!</h1>
+                <p>আপনার জ্ঞান যাচাই করতে প্রস্তুত? গুগল দিয়ে শুরু করুন</p>
+                <button id="google-login-btn" class="btn btn-google">
+                    <i class="fab fa-google"></i> গুগল দিয়ে সাইন-ইন করুন
+                </button>
+            </div>
+        </div>
+
+        <!-- User Dashboard -->
+        <div id="user-dashboard" class="screen">
+            <div id="user-info">
+                <div class="user-profile">
+                    <img id="user-pic" src="" alt="User"/>
+                    <span id="user-name"></span>
+                </div>
+                <button id="logout-btn" class="btn btn-danger btn-small">
+                    <i class="fas fa-sign-out-alt"></i> লগ-আউট
+                </button>
+            </div>
+            
+            <div class="text-center">
+                <h2><i class="fas fa-book-open"></i> পরীক্ষায় স্বাগতম</h2>
+                <p>১৫টি সাধারণ জ্ঞানের প্রশ্নের জন্য প্রস্তুত হন। শুভকামনা!</p>
+                
+                <div class="flex-center">
+                    <button id="start-exam-btn" class="btn">
+                        <i class="fas fa-play"></i> পরীক্ষা শুরু করুন
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Exam Screen -->
+        <div id="exam-screen" class="screen">
+            <div id="exam-header">
+                <div id="question-counter"></div>
+                <div id="timer">
+                    <i class="fas fa-clock"></i> ০০:০০
+                </div>
+            </div>
+            
+            <div class="question-card">
+                <p id="question-text"></p>
+                <div id="options-container" class="options-container"></div>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="screen">
+            <div class="result-container">
+                <h2><i class="fas fa-award"></i> আপনার ফলাফল</h2>
+                
+                <div class="progress-circle" id="result-progress">
+                    <span id="final-score-text">0</span>
+                </div>
+                
+                <div class="result-details">
+                    <div class="result-item">
+                        <span class="result-label">সঠিক উত্তর:</span>
+                        <span class="result-value" id="correct-answers">0/15</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">মোট সময়:</span>
+                        <span class="result-value" id="time-taken-text">00:00</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">সাফল্যের হার:</span>
+                        <span class="result-value" id="success-rate">0%</span>
+                    </div>
+                </div>
+                
+                <div class="flex-center">
+                    <button id="restart-exam-btn" class="btn btn-success">
+                        <i class="fas fa-redo"></i> আবার পরীক্ষা দিন
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Admin Dashboard -->
+        <div id="admin-dashboard" class="screen">
+            <div class="admin-header">
+                <h2><i class="fas fa-tachometer-alt"></i> অ্যাডমিন ড্যাশবোর্ড</h2>
+                <button id="back-to-home-btn" class="btn btn-small">
+                    <i class="fas fa-home"></i> হোমে ফিরে যান
+                </button>
+            </div>
+            
+            <div class="table-container">
+                <div id="loading-spinner" style="display:none;"></div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-user"></i> ব্যবহারকারী</th>
+                            <th><i class="fas fa-envelope"></i> ইমেইল</th>
+                            <th><i class="fas fa-star"></i> নম্বর</th>
+                            <th><i class="fas fa-clock"></i> সময়</th>
+                            <th><i class="fas fa-calendar-alt"></i> জমার তারিখ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-access" title="Admin Access">
+        <i class="fas fa-lock"></i>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBUyLf2fdsRFi0wfP_mzVLi0X_UZLaK8tA",
+            authDomain: "cholo-deki-lets-see.firebaseapp.com",
+            projectId: "cholo-deki-lets-see",
+            storageBucket: "cholo-deki-lets-see.appspot.com",
+            messagingSenderId: "289037265463",
+            appId: "1:289037265463:web:216d24055a7c2c32f52db2"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // DOM Elements
+        const screens = document.querySelectorAll('.screen');
+        const googleLoginBtn = document.getElementById('google-login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const startExamBtn = document.getElementById('start-exam-btn');
+        const restartExamBtn = document.getElementById('restart-exam-btn');
+        const adminAccessLink = document.getElementById('admin-access');
+        const backToHomeBtn = document.getElementById('back-to-home-btn');
+        
+        // App State
+        let currentUser = null;
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let timerInterval;
+        let secondsElapsed = 0;
+        
+        // Questions Data
+        const questions = [
+            { question: "বাংলাদেশের জাতীয় পশুর নাম কী?", options: ["রয়েল বেঙ্গল টাইগার", "হাতি", "হরিণ", "সিংহ"], answer: 0 },
+            { question: "কম্পিউটারের জনক কে?", options: ["বিল গেটস", "চার্লস ব্যাবেজ", "স্টিভ জবস", "মার্ক জাকারবার্গ"], answer: 1 },
+            { question: "সৌরজগতের বৃহত্তম গ্রহ কোনটি?", options: ["পৃথিবী", "মঙ্গল", "বৃহস্পতি", "শনি"], answer: 2 },
+            { question: "বাংলাদেশের সর্বোচ্চ পর্বতশৃঙ্গের নাম কী?", options: ["কেওক্রাডং", "তাজিংডং", "সাকা হাফং", "মোদক মুয়াল"], answer: 2 },
+            { question: "'অসমাপ্ত আত্মজীবনী' গ্রন্থটির লেখক কে?", options: ["শেখ হাসিনা", "বঙ্গবন্ধু শেখ মুজিবুর রহমান", "বেগম রোকেয়া", "কাজী নজরুল ইসলাম"], answer: 1 },
+            { question: "বিশ্বের দীর্ঘতম নদী কোনটি?", options: ["আমাজন", "ইয়াংজি", "মিসিসিপি", "নীল নদ"], answer: 3 },
+            { question: "বাংলাদেশের জাতীয় স্মৃতিসৌধের স্থপতি কে?", options: ["হামিদুর রহমান", "সৈয়দ মাইনুল হোসেন", "মৃণাল হক", "শামীম সিকদার"], answer: 1 },
+            { question: "কোনটি অপারেটিং সিস্টেম নয়?", options: ["Windows", "Linux", "Microsoft Office", "macOS"], answer: 2 },
+            { question: "আন্তর্জাতিক মাতৃভাষা দিবস কবে পালিত হয়?", options: ["২৬শে মার্চ", "২১শে ফেব্রুয়ারি", "১৬ই ডিসেম্বর", "১৪ই এপ্রিল"], answer: 1 },
+            { question: "পৃথিবীর নিকটতম নক্ষত্র কোনটি?", options: ["প্রক্সিমা সেন্টরি", "আলফা সেন্টরি এ", "সূর্য", "ধ্রুবতারা"], answer: 2 },
+            { question: "বাংলাদেশের জাতীয় পতাকার ডিজাইনার কে?", options: ["কামরুল হাসান", "জয়নুল আবেদিন", "এস এম সুলতান", "হামিদুর রহমান"], answer: 0 },
+            { question: "নোবেল পুরস্কার কোন দেশ থেকে দেওয়া হয়?", options: ["যুক্তরাষ্ট্র", "সুইডেন", "যুক্তরাজ্য", "ফ্রান্স"], answer: 1 },
+            { question: "কোন ভিটামিনের অভাবে রাতকানা রোগ হয়?", options: ["ভিটামিন সি", "ভিটামিন ডি", "ভিটামিন এ", "ভিটামিন বি"], answer: 2 },
+            { question: "'গীতবিতান' কে রচনা করেছেন?", options: ["কাজী নজরুল ইসলাম", "রবীন্দ্রনাথ ঠাকুর", "জীবনানন্দ দাশ", "সুকুমার রায়"], answer: 1 },
+            { question: "বাংলাদেশের সাথে কোন দেশের সীমান্ত নেই?", options: ["ভারত", "মিয়ানমার", "নেপাল", "চীন"], answer: 3 }
+        ];
+
+        // Helper Functions
+        function showScreen(screenId) {
+            screens.forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function formatTime(s) {
+            const m = Math.floor(s / 60);
+            const secs = s % 60;
+            return `${String(m).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        // Auth State Listener
+        auth.onAuthStateChanged(user => {
+            if (user && user.email !== "smartwork19999@gmail.com") {
+                // Regular user logged in
+                currentUser = user;
+                document.getElementById('user-name').textContent = user.displayName;
+                document.getElementById('user-pic').src = user.photoURL;
+                showScreen('user-dashboard');
+                adminAccessLink.style.display = 'flex';
+            } else if (user && user.email === "smartwork19999@gmail.com") {
+                // Admin user logged in
+                currentUser = user;
+                loadAdminDashboard();
+                adminAccessLink.style.display = 'none';
+            } else {
+                // No user logged in
+                currentUser = null;
+                showScreen('login-screen');
+                adminAccessLink.style.display = 'flex';
+            }
+        });
+
+        // Event Listeners
+        adminAccessLink.addEventListener('click', () => {
+            const password = prompt("অ্যাডমিন পাসওয়ার্ড দিন:");
+            if (password === "999") { 
+                loadAdminDashboard();
+            } else if (password) {
+                alert("ভুল পাসওয়ার্ড!");
+            }
+        });
+
+        googleLoginBtn.addEventListener('click', () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider)
+                .catch(error => {
+                    console.error("Login Error:", error);
+                    alert("লগইন করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।");
+                });
+        });
+
+        logoutBtn.addEventListener('click', () => { 
+            auth.signOut().catch(error => console.error("Logout Error:", error));
+        });
+
+        startExamBtn.addEventListener('click', startExam);
+        restartExamBtn.addEventListener('click', startExam);
+        backToHomeBtn.addEventListener('click', () => {
+            if(currentUser) { 
+                showScreen('user-dashboard'); 
+            } else { 
+                showScreen('login-screen'); 
+            }
+        });
+
+        // Exam Functions
+        function startExam() {
+            currentQuestionIndex = 0;
+            score = 0;
+            secondsElapsed = 0;
+            clearInterval(timerInterval);
+            startTimer();
+            displayQuestion();
+            showScreen('exam-screen');
+        }
+
+        function displayQuestion() {
+            if (currentQuestionIndex < questions.length) {
+                const q = questions[currentQuestionIndex];
+                document.getElementById('question-counter').textContent = `প্রশ্ন ${currentQuestionIndex + 1}/${questions.length}`;
+                document.getElementById('question-text').textContent = q.question;
+                
+                const optionsContainer = document.getElementById('options-container');
+                optionsContainer.innerHTML = '';
+                
+                q.options.forEach((opt, idx) => {
+                    const el = document.createElement('div');
+                    el.classList.add('option');
+                    el.textContent = opt;
+                    el.dataset.index = idx;
+                    el.addEventListener('click', selectAnswer);
+                    optionsContainer.appendChild(el);
+                });
+            } else {
+                submitExam();
+            }
+        }
+
+        function selectAnswer(e) {
+            const selectedOption = e.target;
+            const options = document.querySelectorAll('.option');
+            options.forEach(opt => opt.style.pointerEvents = 'none');
+
+            const correctIndex = questions[currentQuestionIndex].answer;
+            const selectedIndex = parseInt(selectedOption.dataset.index);
+
+            if (selectedIndex === correctIndex) {
+                score++;
+                selectedOption.classList.add('correct');
+            } else {
+                selectedOption.classList.add('incorrect');
+                options[correctIndex].classList.add('correct');
+            }
+            
+            setTimeout(() => {
+                currentQuestionIndex++;
+                displayQuestion();
+            }, 1500);
+        }
+
+        function startTimer() {
+            const timerElement = document.getElementById('timer');
+            timerInterval = setInterval(() => {
+                secondsElapsed++;
+                timerElement.innerHTML = `<i class="fas fa-clock"></i> ${formatTime(secondsElapsed)}`;
+            }, 1000);
+        }
+
+        async function submitExam() {
+            clearInterval(timerInterval);
+            showScreen('result-screen');
+            
+            const scorePercentage = Math.round((score / questions.length) * 100);
+            animateResult(score, scorePercentage);
+
+            // Update result details
+            document.getElementById('correct-answers').textContent = `${score}/${questions.length}`;
+            document.getElementById('time-taken-text').textContent = formatTime(secondsElapsed);
+            document.getElementById('success-rate').textContent = `${scorePercentage}%`;
+
+            // Save result to Firestore
+            try {
+                await db.collection('results').add({
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName,
+                    userEmail: currentUser.email,
+                    score: score,
+                    totalQuestions: questions.length,
+                    timeTaken: secondsElapsed,
+                    submittedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            } catch (error) { 
+                console.error("Error saving result: ", error);
+            }
+        }
+
+        function animateResult(finalScore, percentage) {
+            const scoreElement = document.getElementById('final-score-text');
+            const progressCircle = document.getElementById('result-progress');
+            let currentScore = 0;
+            
+            const interval = setInterval(() => {
+                if (currentScore >= finalScore) {
+                    clearInterval(interval);
+                }
+                scoreElement.textContent = currentScore;
+                currentScore++;
+            }, 50);
+
+            // Update progress circle
+            progressCircle.style.background = `radial-gradient(closest-side, rgba(0,0,0,0.3) 79%, transparent 80% 100%),
+                        conic-gradient(var(--success) ${percentage}%, var(--danger) ${percentage}%)`;
+        }
+
+        // Admin Functions
+        async function loadAdminDashboard() {
+            showScreen('admin-dashboard');
+            const tableBody = document.getElementById('results-table-body');
+            const spinner = document.getElementById('loading-spinner');
+            
+            tableBody.innerHTML = '';
+            spinner.style.display = 'block';
+
+            try {
+                const snapshot = await db.collection('results').orderBy('submittedAt', 'desc').get();
+                spinner.style.display = 'none';
+
+                if (snapshot.empty) {
+                    tableBody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fas fa-info-circle"></i> এখনও কোনো ফলাফল জমা পড়েনি</td></tr>';
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    const r = doc.data();
+                    const submittedAt = r.submittedAt ? r.submittedAt.toDate().toLocaleString('bn-BD', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }) : 'N/A';
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${r.userName || 'N/A'}</td>
+                        <td>${r.userEmail || 'N/A'}</td>
+                        <td>${r.score}/${r.totalQuestions}</td>
+                        <td>${formatTime(r.timeTaken)}</td>
+                        <td>${submittedAt}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+            } catch (error) {
+                console.error("Error loading admin data: ", error);
+                spinner.style.display = 'none';
+                tableBody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fas fa-exclamation-triangle"></i> তথ্য লোড করতে সমস্যা হয়েছে</td></tr>';
+            }
+        }
+    </script>
+</body>
+</html>
